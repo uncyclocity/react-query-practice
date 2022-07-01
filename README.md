@@ -1,6 +1,6 @@
 # 📡 React-Query 사용하기
 
-> _References_
+> References <br> <a href="https://velog.io/@jkl1545/React-Query">react-query</a> _.jkl1545_
 
 ## 📃 기본 개념
 
@@ -85,32 +85,72 @@
   ])
   ```
 
-  - 비동기적으로 데이터 처리하기
+- 비동기적으로 데이터 처리하기
 
-    ```typescript
-    const fetchArrAPI = () => {
-      return axios.get("https://jsonplaceholder.typicode.com/todos");
-    };
+  ```typescript
+  const fetchArrAPI = () => {
+    return axios.get("https://jsonplaceholder.typicode.com/todos");
+  };
 
-    const fetchOneAPI = (id: number) => {
-      return axios.get(`https://jsonplaceholder.typicode.com/todos/${id}`);
-    };
+  const fetchOneAPI = (id: number) => {
+    return axios.get(`https://jsonplaceholder.typicode.com/todos/${id}`);
+  };
 
-    function Async() {
-      const { data: arrData } = useQuery("exampleArr", fetchArrAPI);
+  function Async() {
+    const { data: arrData } = useQuery("exampleArr", fetchArrAPI);
 
-      const { data: oneData } = useQuery(
-        "exampleOne",
-        () => fetchOneAPI(arrData?.data.length - 1),
-        {
-          enabled: !!arrData?.data.length,
-        }
-      );
+    const { data: oneData } = useQuery(
+      "exampleOne",
+      () => fetchOneAPI(arrData?.data.length - 1),
+      {
+        enabled: !!arrData?.data.length,
+      }
+    );
 
-      return <>{oneData?.data?.title}</>;
-    }
+    return <>{oneData?.data?.title}</>;
+  }
 
-    export default Async;
+  export default Async;
+  ```
+
+  - `useQuery` 옵션 중, false값일 경우 컴포넌트가 리렌더링 되어도 리페칭 하지 않는 `enabled` 옵션을 통해 비동기를 구현할 수 있다.
+
+- `useMutation()` : 서버에 POST/PUT/DELETE 요청 시에 사용되는 훅이다.
+
+  ```javascript
+  const fetchAPI = (newUser) => {
+    return axios.post("http://localhost:8080/users", newUser);
+  };
+
+  ...
+
+  // mutate 메서드를 통해 요청을 보낼 수 있다.
+  const { mutate, isLoading, isFetching, isError, error } = useMutation(fetchAPI, {
+    onSuccess: () => {
+    // 캐시가 있는 모든 쿼리를 무효화하며, 이후 새로 데이터를 패칭한다.
+    queryClient.invalidateQueries();
+  }});
+
+  ...
+
+  mutate(userObj)
+  ```
+
+  - 생명 주기에 따라 콜백함수를 작성할 수 있다.
+
+    ```javascript
+    useMutation(fetchAPI, {
+      onMutate: (variables) => {
+        // mutate 함수가 실행되기 직전에 실행
+      },
+      onSuccess: (data, variables) => {
+        // 요청 성공 시 실행
+      },
+      onError: (error, variables) => {
+        // 에러 시 실행
+      },
+      onSettled: (data, error, variables, context) => {
+        // finally와 같이 무조건 실행
+      },
+    });
     ```
-
-    - `useQuery` 옵션 중, false값일 경우 컴포넌트가 리렌더링 되어도 리페칭 하지 않는 `enabled` 옵션을 통해 비동기를 구현할 수 있다.
