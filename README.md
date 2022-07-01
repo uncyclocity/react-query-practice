@@ -1,46 +1,116 @@
-# Getting Started with Create React App
+# 📡 React-Query 사용하기
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+> _References_
 
-## Available Scripts
+## 📃 기본 개념
 
-In the project directory, you can run:
+- **React-Query**는 **서버 상태** 작업에 특화 된 상태 관리 라이브러리이며, **서버 상태 가져오기**, **캐싱**, **동기화/업데이트**를 간편하게 다룰 수 있도록 도와준다.
+- **서버 상태**는 각각의 컴포넌트에서 관리되는 input 값 등의 **클라이언트 상태**와는 달리, 데이터베이스에 저장 된 값과 같이 **서버단의 상태**를 의미한다.
+- React-Query 상태 분류
+  - **fresh** : 새롭게 추가 된 쿼리 👉 컴포넌트가 리렌더링/언마운트 되어도 데이터를 재요청하지 않는다.
+  - **fetching** : 요청 중인 쿼리
+  - **stale** : 만료된 쿼리 👉 컴포넌트 리렌더링/언마운트 시 데이터를 재요청한다.
+  - **inactive** : 비활성화된 쿼리
 
-### `npm start`
+## 💻 사용하기
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- 루트 컴포넌트에 `QueryClient` 인스턴스를 추가 후, `QueryClientProvider` 컴포넌트로 인스턴스에 접근할 수 있도록 감싸준다.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+  ```javascript
+  import { QueryClientProvider, QueryClient } from "react-query";
 
-### `npm test`
+  const queryClient = new QueryClient();
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+  const root = ReactDOM.createRoot(
+  document.getElementById("root") as HTMLElement
+  );
 
-### `npm run build`
+  root.render(
+    <QueryClientProvider client={queryClient}>
+      <App />
+    <QueryClientProvider>
+  );
+  ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- `useQuery()` : 서버에서 데이터를 가져오기 위한 GET 요청 시에 사용되는 훅이다.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+  ```javascript
+  const fetchAPI = () => {
+    return axios.get("https://jsonplaceholder.typicode.com/todos/1");
+  };
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+  ...
 
-### `npm run eject`
+  // 차례대로 서버로부터 받은 데이터, 캐시가 없는 상태에서의 로딩 여부(boolean), 캐시 유무에 관계 없는 페칭 여부(Boolean), 에러 여부(Boolean), 에러 객체
+  const { data, isLoading, isFetching, isError, error } = useQuery(
+    "example",
+    fetchAPI,
+    {
+      //cacheTime: 500, //언마운트 이후 데이터를 저장하여 캐싱하는 시간
+      //staleTime: 500, //쿼리가 fresh 상태에서 stale 상태로 전환되는 시간
+      //refetchOnMount: true, //컴포넌트 마운트 시 리페칭
+      //refetchOnWindowFocus: true, //브라우저 포커싱되면 리페칭
+      //refetchInterval: 500, //지정한 시간 간격으로 리페칭
+      //refetchIntervalInBackground: true, //브라우저에 포커스가 없어도 refetchInterval에 지정한 시간만큼 리페칭
+      //enabled: false, //컴포넌트가 마운트 되어도 리페칭X (useQuery Hook이 반환하는 referch 함수를 이용하여 리페칭할 수 있다)
+      //onSuccess: (data) => console.log(data), //성공 시 동작
+      //onError: (err) => console.error(err), //실패 시 동작
+      //select: (data) => ({ ...data, data: { ...data.data, title: "김백괴" } }), //데이터 가공
+    }
+  );
+  ```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+- `useQueries()` : 여러 데이터 요청을 한 번에 수행할 수 있도록 하는 훅이다.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+  ```javascript
+  const fetchAPI1 = () => {
+    return axios.get("https://jsonplaceholder.typicode.com/todos/1");
+  };
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+  const fetchAPI2 = () => {
+    return axios.get("https://jsonplaceholder.typicode.com/todos/2");
+  };
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+  const fetchAPI3 = () => {
+    return axios.get("https://jsonplaceholder.typicode.com/todos/3");
+  };
 
-## Learn More
+  ...
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+  // 각 요청에 대한 isLoading, data 등의 상태가 담긴 객체들이 배열로 들어온다.
+  const res = useQueries([
+      {queryKey: 'example1', queryFn: fetchAPI1},
+      {queryKey: 'example2', queryFn: fetchAPI2},
+      {queryKey: 'example3', queryFn: fetchAPI3},
+  ])
+  ```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+  - 비동기적으로 데이터 처리하기
+
+    ```typescript
+    const fetchArrAPI = () => {
+      return axios.get("https://jsonplaceholder.typicode.com/todos");
+    };
+
+    const fetchOneAPI = (id: number) => {
+      return axios.get(`https://jsonplaceholder.typicode.com/todos/${id}`);
+    };
+
+    function Async() {
+      const { data: arrData } = useQuery("exampleArr", fetchArrAPI);
+
+      const { data: oneData } = useQuery(
+        "exampleOne",
+        () => fetchOneAPI(arrData?.data.length - 1),
+        {
+          enabled: !!arrData?.data.length,
+        }
+      );
+
+      return <>{oneData?.data?.title}</>;
+    }
+
+    export default Async;
+    ```
+
+    - `useQuery` 옵션 중, false값일 경우 컴포넌트가 리렌더링 되어도 리페칭 하지 않는 `enabled` 옵션을 통해 비동기를 구현할 수 있다.
